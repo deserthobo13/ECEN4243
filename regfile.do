@@ -39,7 +39,7 @@ view wave
 # Diplays All Signals recursively
 add wave -hex -r /stimulus/*
 
-# Adapt to make Waveform Viewer prettier :)
+# Adapt to make Waveform Viewer prettier :
 #add wave -noupdate -divider -height 32 "MIPS Datapath"
 #add wave -hex /stimulus/dut/mips/dp/*
 #add wave -noupdate -divider -height 32 "MIPS Control"
@@ -67,6 +67,6 @@ configure wave -rowmargin 4
 configure wave -childrowmargin 2
 
 -- Run the Simulation
-run 110ns
+run 200ns
 
 
