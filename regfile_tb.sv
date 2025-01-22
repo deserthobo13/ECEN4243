@@ -1,11 +1,11 @@
 module stimulus ();
 
-   logic   clock;
+   logic  clock;
    logic 	we3;
    logic [4:0]	ra1;
    logic [4:0]	ra2;
    logic [4:0]	wa3;
-   logic [31:0]	wd3;
+   logic [31:0] wd3;
    
    logic [31:0] rd1;
    logic [31:0] rd2;
@@ -25,10 +25,10 @@ module stimulus ();
 
    initial
      begin
-	// Gives output file name
-	handle3 = $fopen("regfile_test.out");
-	// Tells when to finish simulation
-	#500 $finish;		
+	     // Gives output file name
+	     handle3 = $fopen("regfile_test.out");
+	     // Tells when to finish simulation
+	     #500 $finish;		
      end
 
    always 
@@ -40,17 +40,46 @@ module stimulus ();
    
    initial 
      begin  	 
-	#0  we3 = 1'b0;
-	#0	wd3 = 32'b0;
-	#0 	wa3 = 5'b0;
-	#10 wd3 = 32'b1;
+	#0 we3 = 1'b0;
+     #0 ra1 = 5'b0;
+     #0 ra2 = 5'b0;
+	#0 wa3 = 5'b0;
+     
 	#20 we3 = 1'b1;
-	#10 wd3 = 32'b0;
+     #10 wa3 = 5'b00111;
+	#10 wd3 = $urandom;
 	
-	#10 ra1 = 5'b10110;
+	#10 ra1 = 5'b00111;
 	#10 ra2 = 5'b00111;
 	#20 ra1 = 5'b0;
 	#0  ra2 = 5'b0;
+
+     #10 wa3 = 5'b0;
+     #0  wd3 = $urandom;
+
+     #10 we3 = 1'b0;
+     #0  ra1 = 5'b00101;
+     #0  ra2 = 5'b00101;
+     #0  wa3 = 5'b00101;
+     #0  wd3 = $urandom;
+
+     #20 we3 = 1'b1;
+     #0  ra1 = 5'b10010;
+     #10 ra2 = 5'b01101;
+     #0  wa3 = 5'b01101;
+     #10 wd3 = $urandom;
+
+     #5  wd3 = $urandom;
+     #10 wa3 = 5'b10010;
+     
+
+     #10 we3 = 1'b0;
+     #30 ra1 = 5'b0;
+     #0  ra2 = 5'b0;
+     #0  wa3 = 5'b0;
+
+
+
      end
 
 endmodule // stimulus
