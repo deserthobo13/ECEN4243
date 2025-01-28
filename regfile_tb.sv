@@ -40,7 +40,7 @@ module stimulus ();
    
    initial 
      begin  	 
-	#0 we3 = 1'b0;
+	#1 we3 = 1'b0;
      #0 ra1 = 5'b0;
      #0 ra2 = 5'b0;
 	#0 wa3 = 5'b0;
