@@ -1,0 +1,18 @@
+    1  source /opt/modpath.sh
+    2  vsim -do fsm.do
+    3  source /opt/modpath.sh
+    4  vsim -do fsm.do
+    5  vsim -do regfile.do
+    6  vsim -do fsm.do
+    7  vsim -do regfile.do
+    8  cd cvw
+    9  git clone --recurse-submodules https://github.com/SamShankle/cvw
+   10  cd cvw
+   11  source ./setup.sh
+   12  cd examples/
+   13  cd C
+   14  cd hello
+   15  make
+   16  wsim --sim questa rv64gc --elf hello
+   17  history
+
