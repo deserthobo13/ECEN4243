@@ -1,7 +1,11 @@
-Short lab intro
+This lab focuses on gaining experience with RISC-V assebmly, simulation, and debugging. The main objectives indluded
+    - Simulation RISC-V program swith Spike
+    - Debugging and simulating the riscv-wally SystemVerilog modle with Verilator        and Questa
+RISC-V is a open source instruction set architecture widely used in the industry. This lab introduces essential RISC-V toolchiand, including GNU GCC, Binutils, and simulation frameworks. By the end of this lab we gained a better understanding of RISC-V development workflows and debugging techniques
 
 
 #################################################################################################################
+
 Section 2 Command History
 
     1  source /opt/modpath.sh
@@ -23,6 +27,7 @@ Section 2 Command History
     17  history
 
 #################################################################################################################
+
 Section 3 Command History
 
     1  source /opt/modpath.sh
@@ -106,6 +111,7 @@ Section 3 Command History
     79  history > part3.txt
 
 #################################################################################################################
+
 Markdown table resutls of Section 3
 
 Results
@@ -127,4 +133,12 @@ mcycle spike:
 
 #################################################################################################################
 
-Instructions on how to run fir1 and fir2
+To run both fir1 and fir2 you will follow these steps
+    - cd to the fir1 or fir2 foulder 
+    - run "make clean"
+    - run "make"
+    - run "spike fir1 or fir2"
+        - This gets the .objdump file 
+    - run "wsim -sim questa rv64gc --elf sum"
+        - This will get the .memfile, objdump.addr, and objdump.lab files also
+    - When you run spike and Questa you can compare the CPI values you get.
