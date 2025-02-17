@@ -1,6 +1,8 @@
 This lab focuses on gaining experience with RISC-V assebmly, simulation, and debugging. The main objectives indluded:
-    1.  Simulation RISC-V program swith Spike
-    2.  Debugging and simulating the riscv-wally SystemVerilog modle with Verilator and Questa
+
+    -  Simulation RISC-V program swith Spike
+    -  Debugging and simulating the riscv-wally SystemVerilog modle with Verilator and Questa
+    
 RISC-V is a open source instruction set architecture widely used in the industry. This lab introduces essential RISC-V toolchiand, including GNU GCC, Binutils, and simulation frameworks. By the end of this lab we gained a better understanding of RISC-V development workflows and debugging techniques
 
 
@@ -134,6 +136,7 @@ mcycle spike:
 #################################################################################################################
 
 To run both fir1 and fir2 you will follow these steps
+
     1. cd to the fir1 or fir2 foulder 
     2. run "make clean"
     3. run "make"
