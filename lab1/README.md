@@ -141,4 +141,4 @@ To run both fir1 and fir2 you will follow these steps
         - This gets the .objdump file 
     - run "wsim -sim questa rv64gc --elf sum"
         - This will get the .memfile, objdump.addr, and objdump.lab files also
-    - When you run spike and Questa you can compare the CPI values you get.
+    - When you run spike and Questa you can compare the CPI values you get
