@@ -123,16 +123,31 @@ Results:
     -O
     -O2
 
-    Mcycle Questa:
+    mycycle / minstret Questa:
     1609952 / 1028970
     1598787 / 739395
     1598749 / 721025
 
-    mcycle spike:
+    mcycle / minstret Spike:
     392150 / 392166
     149531 / 149538
     116478 / 116483
 
+Markdown talbe results of Section 4
+
+    optimization level: 
+    None
+    -O
+    -O2
+
+    mycycle / minstret Questa:
+    1192 / 969
+    1127 / 916
+    1128 / 913
+    mcycle / minstret Spike:
+    953 / 969
+    909 / 916
+    908 / 913
 #################################################################################################################
 
 To run both fir1 and fir2 you will follow these steps
