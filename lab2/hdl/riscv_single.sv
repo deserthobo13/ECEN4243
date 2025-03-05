@@ -84,14 +84,14 @@ module riscvsingle (input  logic        clk, reset,
    logic [2:0]        ImmSrc;
    logic [3:0] 				ALUControl;
    
-   controller c (Instr[6:0], Instr[14:12], Instr[30], Zero,
+   controller c (Instr[6:0], Instr[14:12], Instr[30], Zero, Carry, Neg, Overflow,
 		 ResultSrc, MemWrite, PCSrc,
 		 ALUSrc, RegWrite, Jump,
 		 ImmSrc, ALUControl);
    datapath dp (clk, reset, ResultSrc, PCSrc,
 		ALUSrc, RegWrite,
 		ImmSrc, ALUControl,
-		Zero, PC, Instr,
+		Zero, Carry, Neg, Overflow, PC, Instr,
 		ALUResult, WriteData, ReadData);
    
 endmodule // riscvsingle
@@ -99,7 +99,7 @@ endmodule // riscvsingle
 module controller (input  logic [6:0] op,
 		   input  logic [2:0] funct3,
 		   input  logic       funct7b5,
-		   input  logic       Zero,
+		   input  logic       Zero, Carry, Neg, Overflow,
 		   output logic [1:0] ResultSrc,
 		   output logic       MemWrite,
 		   output logic       PCSrc, ALUSrc,
@@ -118,16 +118,16 @@ module controller (input  logic [6:0] op,
       case(funct3)
         3'b000:   BranchControl = Zero;    //beq
         3'b001:   BranchControl = ~Zero;    //bne
-        3'b100:   BranchControl = funct7b5[4];    //blt  
-        3'b101:   BranchControl = ~funct7b5[4];    //bge
-        3'b110:   bltu;
-        3'b111:   bgeu;
-        default: 
+        3'b100:   BranchControl = Neg ^ Overflow;    //blt  
+        3'b101:   BranchControl = ~(Neg ^ Overflow);    //bge
+        3'b110:   BranchControl = Zero | ~Carry;   //bltu
+        3'b111:   BranchControl = Carry;  //bgeu
+        default:  BranchControl = 1'b0;
       endcase
    end
-   assign Branch = Zero ^ funct3; 
-   assign PCSrc = Branch & (Zero ^ funct3[0]) | Jump;
-   
+   //assign Branch = Zero ^ funct3; 
+   assign PCSrc = Branch & BranchControl /*(Zero ^ funct3[0])*/ | Jump;
+
 endmodule // controller
 
 module maindec (input  logic [6:0] op,
@@ -150,7 +150,7 @@ module maindec (input  logic [6:0] op,
        7'b0100011: controls = 12'b0_001_1_1_00_0_00_0; // sw
        7'b0110011: controls = 12'b1_xxx_0_0_00_0_10_0; // R–type
        7'b1100011: controls = 12'b0_010_0_0_00_1_01_0; // beq & bne
-       7'b0110111: controls = 12'b1_100_1_0_00_0_10_0; // LUI
+       7'b0110111: controls = 12'b1_100_1_0_00_0_1x_0; // LUI
        7'b0010011: controls = 12'b1_000_1_0_00_0_10_0; // I–type ALU
        7'b1101111: controls = 12'b1_011_0_0_10_0_00_1; // jal
        default: controls = 12'bx_xxx_x_x_xx_x_xx_x; // ???
@@ -195,7 +195,7 @@ module datapath (input  logic        clk, reset,
 		 input  logic 	     RegWrite,
 		 input  logic [2:0]  ImmSrc,
 		 input  logic [3:0]  ALUControl,
-		 output logic 	     Zero,
+		 output logic 	     Zero, Carry, Neg, Overflow,
 		 output logic [31:0] PC,
 		 input  logic [31:0] Instr,
 		 output logic [31:0] ALUResult, WriteData,
@@ -217,7 +217,7 @@ module datapath (input  logic        clk, reset,
    extend  ext (Instr[31:7], ImmSrc, ImmExt);
    // ALU logic
    mux2 #(32)  srcbmux (WriteData, ImmExt, ALUSrc, SrcB);
-   alu  alu (SrcA, SrcB, ALUControl, ALUResult, Zero);
+   alu  alu (SrcA, SrcB, ALUControl, ALUResult, Zero, Carry, Neg, Overflow);
    mux3 #(32) resultmux (ALUResult, ReadData, PCPlus4,ResultSrc, Result);
 
 endmodule // datapath
@@ -330,7 +330,7 @@ endmodule // dmem
 module alu (input  logic [31:0] a, b,
             input  logic [3:0] 	alucontrol,
             output logic [31:0] result,
-            output logic 	zero);
+            output logic 	zero, carry, neg, overflow);
 
    logic [31:0] 	       condinvb, sum;
    logic 		       v;              // overflow
@@ -355,6 +355,9 @@ module alu (input  logic [31:0] a, b,
      endcase
 
    assign zero = (result == 32'b0);
+   assign carry = a < b;
+   assign neg = result[31];
+   assign overflow = ~(alucontrol[0] ^ a[31] ^ b[31]) & (a[31] ^ sum[31]) & isAddSub;
    assign v = ~(alucontrol[0] ^ a[31] ^ b[31]) & (a[31] ^ sum[31]) & isAddSub;
    
 endmodule // alu
