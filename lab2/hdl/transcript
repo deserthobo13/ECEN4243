@@ -1,0 +1,32 @@
+# do riscv_single.do
+# ** Warning: (vdel-134) Unable to remove locked optimized design "_opt".  Locker is jstine@sakuya.ecen.okstate.edu.
+# ** Warning: (vlib-34) Library already exists at "work".
+# Errors: 0, Warnings: 1
+# QuestaSim-64 vlog 2024.3_2 Compiler 2024.11 Nov 25 2024
+# Start time: 19:59:46 on Mar 04,2025
+# vlog riscv_single.sv 
+# -- Compiling module testbench
+# -- Compiling module riscvsingle
+# -- Compiling module controller
+# ** Error: (vlog-13069) riscv_single.sv(121): near "(": syntax error, unexpected '('.
+# -- Compiling module maindec
+# -- Compiling module aludec
+# -- Compiling module datapath
+# -- Compiling module adder
+# -- Compiling module extend
+# -- Compiling module flopr
+# -- Compiling module flopenr
+# -- Compiling module mux2
+# -- Compiling module mux3
+# -- Compiling module top
+# -- Compiling module imem
+# -- Compiling module dmem
+# -- Compiling module alu
+# -- Compiling module regfile
+# End time: 19:59:46 on Mar 04,2025, Elapsed time: 0:00:00
+# Errors: 1, Warnings: 0
+# ** Error: /opt/questasim/linux_x86_64/vlog failed.
+# Error in macro ./riscv_single.do line 30
+# /opt/questasim/linux_x86_64/vlog failed.
+#     while executing
+# "vlog riscv_single.sv"
