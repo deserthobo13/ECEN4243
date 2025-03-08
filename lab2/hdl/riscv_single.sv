@@ -39,8 +39,10 @@ module testbench();
 
    initial
      begin
-	string memfilename;
-        memfilename = {"../riscvtest/xor-test.memfile"};
+	      string memfilename;
+        //memfilename = {"../riscvtest/xor-test.memfile"};
+        memfilename = {"../testing/lui.memfile"};
+        //memfilename = {"../riscvtest/bne-test.memfile"};
         $readmemh(memfilename, dut.imem.RAM);
      end
 
@@ -54,7 +56,7 @@ module testbench();
    // generate clock to sequence tests
    always
      begin
-	clk <= 1; # 5; clk <= 0; # 5;
+	    clk <= 1; # 5; clk <= 0; # 5;
      end
 
    // check results
@@ -126,7 +128,7 @@ module controller (input  logic [6:0] op,
       endcase
    end
    //assign Branch = Zero ^ funct3; 
-   assign PCSrc = Branch & BranchControl /*(Zero ^ funct3[0])*/ | Jump;
+   assign PCSrc = (Branch & BranchControl) /*(Zero ^ funct3[0])*/ | Jump;
 
 endmodule // controller
 
@@ -138,7 +140,7 @@ module maindec (input  logic [6:0] op,
 		output logic [2:0] ImmSrc,
 		output logic [1:0] ALUOp);
    
-   logic [10:0] 		   controls;
+   logic [11:0] 		   controls;
    
    assign {RegWrite, ImmSrc, ALUSrc, MemWrite,
 	   ResultSrc, Branch, ALUOp, Jump} = controls;
@@ -218,8 +220,8 @@ module datapath (input  logic        clk, reset,
    // ALU logic
    mux2 #(32)  srcbmux (WriteData, ImmExt, ALUSrc, SrcB);
    alu  alu (SrcA, SrcB, ALUControl, ALUResult, Zero, Carry, Neg, Overflow);
-   mux3 #(32) resultmux (ALUResult, ReadData, PCPlus4,ResultSrc, Result);
-
+   mux2 #(32) immmux (PCTarget, ImmExt, ImmSrc, ImmResult);
+   mux3 #(32) resultmux (ALUResult, ReadData, ImmResult, ResultSrc, Result);
 endmodule // datapath
 
 module adder (input  logic [31:0] a, b,
@@ -245,8 +247,6 @@ module extend (input  logic [31:7] instr,
        3'b011:  immext = {{12{instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0};
        // U-type
        3'b100:  immext = {instr[31:12], 12'b0};
-       // R-type
-       //3'b101:  immext = {}
        default: immext = 32'bx; // undefined
      endcase // case (immsrc)
    
@@ -350,7 +350,8 @@ module alu (input  logic [31:0] a, b,
        4'b0100:  result = a ^ b;       //xor
        4'b0101:  result = sum[31] ^ v; // slt  
        4'b0110:  result = a << b[4:0]; // sll
-       4'b0111:  result = a < b;       // sltu
+       4'b0111:  result = a >> b[4:0];  // srl
+       4'b1000:  result = a < b;        //sltu
        default: result = 32'bx;
      endcase
 
@@ -358,7 +359,7 @@ module alu (input  logic [31:0] a, b,
    assign carry = a < b;
    assign neg = result[31];
    assign overflow = ~(alucontrol[0] ^ a[31] ^ b[31]) & (a[31] ^ sum[31]) & isAddSub;
-   assign v = ~(alucontrol[0] ^ a[31] ^ b[31]) & (a[31] ^ sum[31]) & isAddSub;
+   //assign v = ~(alucontrol[0] ^ a[31] ^ b[31]) & (a[31] ^ sum[31]) & isAddSub;
    
 endmodule // alu
 
