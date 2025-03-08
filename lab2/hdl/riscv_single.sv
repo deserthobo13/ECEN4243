@@ -220,8 +220,7 @@ module datapath (input  logic        clk, reset,
    // ALU logic
    mux2 #(32)  srcbmux (WriteData, ImmExt, ALUSrc, SrcB);
    alu  alu (SrcA, SrcB, ALUControl, ALUResult, Zero, Carry, Neg, Overflow);
-   mux2 #(32) immmux (PCTarget, ImmExt, ImmSrc, ImmResult);
-   mux3 #(32) resultmux (ALUResult, ReadData, ImmResult, ResultSrc, Result);
+   mux3 #(32) resultmux (ALUResult, ReadData, ImmExt, ResultSrc, Result);
 endmodule // datapath
 
 module adder (input  logic [31:0] a, b,
@@ -291,6 +290,15 @@ module mux3 #(parameter WIDTH = 8)
   assign y = s[1] ? d2 : (s[0] ? d1 : d0);
    
 endmodule // mux3
+
+module mux4 #(parameter WIDTH = 8)
+   (input  logic [WIDTH-1:0] d0, d1, d2, d3,
+    input logic [1:0] 	     s,
+    output logic [WIDTH-1:0] y);
+   
+  assign y = s[1] ? (s[0] ? d3 : d2) : (s[0] ? d1 : d0);
+
+endmodule // mux4
 
 module top (input  logic        clk, reset,
 	    output logic [31:0] WriteData, DataAdr,
