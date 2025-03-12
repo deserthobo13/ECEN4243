@@ -83,17 +83,18 @@ module riscvsingle (input  logic        clk, reset,
 		    output logic [31:0] ALUResult, WriteData,
 		    input  logic [31:0] ReadData);
    
-   logic 				ALUSrcA, AKUSrcB, RegWrite, Jump, Zero;
+   logic 				      ALUSrc, RegWrite, Jump, Zero;
    logic [1:0] 				ResultSrc; 
    logic [2:0]        ImmSrc;
    logic [3:0] 				ALUControl;
+   logic              ALUSrcA, ALUSrcB;
    
    controller c (Instr[6:0], Instr[14:12], Instr[30], Zero, Carry, Neg, Overflow,
 		 ResultSrc, MemWrite, PCSrc,
 		 ALUSrcA, ALUSrcB, RegWrite, Jump,
 		 ImmSrc, ALUControl);
    datapath dp (clk, reset, ResultSrc, PCSrc,
-		ALUSrcA, ResultSrc, RegWrite,
+		ALUSrcA, ALUSrcB, RegWrite,
 		ImmSrc, ALUControl,
 		Zero, Carry, Neg, Overflow, PC, Instr,
 		ALUResult, WriteData, ReadData);
@@ -142,9 +143,9 @@ module maindec (input  logic [6:0] op,
 		output logic [2:0] ImmSrc,
 		output logic [1:0] ALUOp);
    
-   logic [11:0] 		   controls;
+   logic [12:0] 		   controls;
    
-   assign {RegWrite, ImmSrc, ALUSrc, MemWrite,
+   assign {RegWrite, ImmSrc, ALUSrcA, ALUSrcB, MemWrite,
 	   ResultSrc, Branch, ALUOp, Jump} = controls;
    
    always_comb
@@ -157,6 +158,7 @@ module maindec (input  logic [6:0] op,
        7'b0110111: controls = 13'b1_100_1_1_0_00_0_xx_0; // LUI
        7'b0010011: controls = 13'b1_000_0_0_0_00_0_10_0; // I–type ALU
        7'b1101111: controls = 13'b1_011_x_x_0_10_0_xx_1; // jal
+       7'b0010111: controls = 13'b1_100_0_1_0_00_0_10_0; // AUIPC
        default: controls = 12'bx_xxx_x_x_xx_x_xx_x;    // ???
      endcase // case (op)
    
@@ -348,7 +350,7 @@ module alu (input  logic [31:0] a, b,
             output logic [31:0] result,
             output logic 	zero, carry, neg, overflow);
 
-   logic [31:0] 	       condinvb, sum;
+   logic [31:0] 	 condinvb, sum;
    logic 		       v;              // overflow
    logic 		       isAddSub;       // true when is add or subtract operation
 
@@ -401,4 +403,3 @@ module regfile (input  logic        clk,
    assign rd2 = (a2 != 0) ? rf[a2] : 0;
    
 endmodule // regfile
-
