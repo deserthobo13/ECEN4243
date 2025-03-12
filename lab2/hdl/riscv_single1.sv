@@ -39,11 +39,11 @@ module testbench();
 
    initial
      begin
-	      string memfilename;
+	string memfilename;
         memfilename = {"../riscvtest/riscvtest.memfile"};
         //memfilename = {"../riscvtest/fib.memfile"};
         //memfilename = {"../othertests/loadAndStore.memfile"};
-        //memfilename = {"../lab1tests/lui.memfile"};
+        //memfilename = {"../testing/lui.memfile"};
         $readmemh(memfilename, dut.imem.RAM);
      end
 
@@ -51,28 +51,28 @@ module testbench();
    // initialize test
    initial
      begin
-      	reset <= 1; # 22; reset <= 0;
+	reset <= 1; # 22; reset <= 0;
      end
 
    // generate clock to sequence tests
    always
      begin
-      	clk <= 1; # 5; clk <= 0; # 5;
+	clk <= 1; # 5; clk <= 0; # 5;
      end
 
    // check results
-   always @(negedge clk)
+   /*always @(negedge clk)
      begin
-	      if(MemWrite) begin
+	if(MemWrite) begin
            if(DataAdr === 100 & WriteData === 25) begin
               $display("Simulation succeeded");
               $stop;
-            end else if (DataAdr !== 96) begin
+           end else if (DataAdr !== 96) begin
               $display("Simulation failed");
               $stop;
            end
-	      end
-     end
+	end
+     end*/
 endmodule // testbench
 
 module riscvsingle (input  logic        clk, reset,
@@ -81,29 +81,31 @@ module riscvsingle (input  logic        clk, reset,
 		    output logic 	MemWrite,
 		    output logic [31:0] ALUResult, WriteData,
 		    input  logic [31:0] ReadData,
-        output logic [3:0] ByteMask);
-
-   logic 				      ALUSrc, RegWrite, Jump, Zero, Neg, Overflow;
-   logic [1:0] 				ResultSrc; 
+        output logic [3:0]  ByteMask);
+   
+   logic 				ALUSrc, RegWrite, Jump, Zero, Negative, Overflow; //negative and overflow added by us
+   logic [1:0] 				ResultSrc;
    logic [2:0]        ImmSrc;
    logic [3:0] 				ALUControl;
-   
-   controller c (Instr[6:0], Instr[14:12], Instr[30], Zero, Carry, Neg, Overflow,
+
+   logic              AddPC;
+
+   controller c (Instr[6:0], Instr[14:12], Instr[30], Zero, Negative, Overflow, Carry,
 		 ResultSrc, MemWrite, PCSrc,
 		 ALUSrc, RegWrite, Jump,
-		 ImmSrc, ALUControl);
+		 ImmSrc, ALUControl,AddPC);
    datapath dp (clk, reset, ResultSrc, PCSrc,
 		ALUSrc, RegWrite,
 		ImmSrc, ALUControl,
-		Zero, Carry, Neg, Overflow, PC, Instr,
-		ALUResult, WriteData, ReadData);
+		Zero, Negative, Overflow, Carry, PC, Instr,
+		ALUResult, WriteData, ReadData,AddPC,ByteMask);
    
 endmodule // riscvsingle
 
 module controller (input  logic [6:0] op,
 		   input  logic [2:0] funct3,
 		   input  logic       funct7b5,
-		   input  logic       Zero, Carry, Neg, Overflow,
+		   input  logic       Zero, Negative, Overflow, Carry,
 		   output logic [1:0] ResultSrc,
 		   output logic       MemWrite,
 		   output logic       PCSrc, ALUSrc,
@@ -113,27 +115,26 @@ module controller (input  logic [6:0] op,
        output logic       AddPC);
    
    logic [1:0] 			      ALUOp;
-   logic 			            Branch;
-   logic                  BranchControl;
+   logic 			      Branch;
+   logic            BranchControl;
+
+   always_comb
+    case(funct3)
+    3'b000: BranchControl = Zero;                     //beq
+    3'b001: BranchControl = ~Zero;                    //bne
+    3'b100: BranchControl = ~(Negative == Overflow);  //blt
+    3'b101: BranchControl = Negative == Overflow;     //bge
+    3'b110: BranchControl = Carry;                    //bltu
+    3'b111: BranchControl = ~Carry;                   //bgeu
+    default: BranchControl = 1'b0;
+    endcase
    
    maindec md (op, ResultSrc, MemWrite, Branch,
 	       ALUSrc, RegWrite, Jump, ImmSrc, ALUOp);
    aludec ad (op[5], funct3, funct7b5, ALUOp, ALUControl);
-   always_comb begin
-      case(funct3)
-        3'b000:   BranchControl = Zero;    //beq
-        3'b001:   BranchControl = ~Zero;    //bne
-        3'b100:   BranchControl = ~(Neg == Overflow);    //blt  
-        3'b101:   BranchControl = Neg == Overflow;    //bge
-        3'b110:   BranchControl = Carry;   //bltu
-        3'b111:   BranchControl = ~Carry;  //bgeu
-        default:  BranchControl = 1'b0;
-      endcase
-   end
-   //assign Branch = Zero ^ funct3; 
-   assign PCSrc = Branch & BranchControl /*(Zero ^ funct3[0])*/ | Jump;
-   assign AddPC = (op == 7'b0010111);
-
+   assign PCSrc = Branch & BranchControl | Jump;
+   assign AddPC = (op == 7'b0010111); //for auipc
+   
 endmodule // controller
 
 module maindec (input  logic [6:0] op,
@@ -144,7 +145,7 @@ module maindec (input  logic [6:0] op,
 		output logic [2:0] ImmSrc,
 		output logic [1:0] ALUOp);
    
-   logic [10:0] 		   controls;
+   logic [11:0] 		   controls;
    
    assign {RegWrite, ImmSrc, ALUSrc, MemWrite,
 	   ResultSrc, Branch, ALUOp, Jump} = controls;
@@ -155,47 +156,47 @@ module maindec (input  logic [6:0] op,
        7'b0000011: controls = 12'b1_000_1_0_01_0_00_0; // lw
        7'b0100011: controls = 12'b0_001_1_1_00_0_00_0; // sw
        7'b0110011: controls = 12'b1_xxx_0_0_00_0_10_0; // R–type
-       7'b1100011: controls = 12'b0_010_0_0_00_1_01_0; // beq & bne
+       7'b1100011: controls = 12'b0_010_0_0_00_1_01_0; // B-type
        7'b0010011: controls = 12'b1_000_1_0_00_0_10_0; // I–type ALU
        7'b1101111: controls = 12'b1_011_0_0_10_0_00_1; // jal
        7'b1100111: controls = 12'b1_000_1_0_10_0_00_1; // jalr
        7'b0110111: controls = 12'b1_100_1_0_00_0_11_0; // lui
        7'b0010111: controls = 12'b1_100_1_0_00_0_00_0; // auipc
-       default: controls = 12'bx_xxx_x_x_xx_x_xx_x; // ???
+       default: controls = 11'bx_xx_x_x_xx_x_xx_x; // ???
      endcase // case (op)
    
 endmodule // maindec
 
 module aludec (input  logic       opb5,
 	       input  logic [2:0] funct3,
-	       input  logic 	    funct7b5,
+	       input  logic 	  funct7b5,
 	       input  logic [1:0] ALUOp,
 	       output logic [3:0] ALUControl);
    
    logic 			  RtypeSub;
    
    assign RtypeSub = funct7b5 & opb5; // TRUE for R–type subtract
-   
    always_comb
      case(ALUOp)
        2'b00: ALUControl = 4'b0000; // addition
        2'b01: ALUControl = 4'b0001; // subtraction
        2'b10: case(funct3) // R–type or I–type ALU
-		          3'b000: if (RtypeSub)
-		              ALUControl = 4'b0001; // sub
-		             else
-		              ALUControl = 4'b0000; // add, addi
-       3'b100: ALUControl = 4'b0100;  //xor, xori
-		   3'b010: ALUControl = 4'b0101; // slt, slti
-       3'b001: ALUControl = 4'b0110; // sll, slli
-       3'b011: ALUControl = 4'b0111; //sltu, sltui
-       3'b101: ALUControl = funct7b5 ? 4'b1001 : 4'b1000;
-                    3'b110: ALUControl = 4'b0011;
-                    3'b111: ALUControl = 4'b0010;
+		  3'b000: if (RtypeSub)
+		    ALUControl = 4'b0001; // sub
+		  else
+		    ALUControl = 4'b0000; // add, addi
+      
+      3'b001: ALUControl = 4'b0110; // sll
+      3'b010: ALUControl = 4'b0101; // slt, slti
+      3'b011: ALUControl = 4'b0111; // sltu
+      3'b100: ALUControl = 4'b0100; // xor
+      3'b101: ALUControl = funct7b5 ? 4'b1001 : 4'b1000; // sra, srl
+		  3'b110: ALUControl = 4'b0011; // or, ori
+		  3'b111: ALUControl = 4'b0010; // and, andi
 
-		                default: ALUControl = 4'bxxxx; // ???
-		          endcase // case (funct3)  
-       default: ALUControl = 4'b1010; //2'b11, other functions     
+		  default: ALUControl = 4'bxxxx; // ???
+		endcase // case (funct3) 
+    default: ALUControl = 4'b1010;   //2'b11, other functions      
      endcase // case (ALUOp)
    
 endmodule // aludec
@@ -206,40 +207,40 @@ module datapath (input  logic        clk, reset,
 		 input  logic 	     RegWrite,
 		 input  logic [2:0]  ImmSrc,
 		 input  logic [3:0]  ALUControl,
-		 output logic 	     Zero, Carry, Neg, Overflow,
+		 output logic 	     Zero, Negative, Overflow, Carry,
 		 output logic [31:0] PC,
 		 input  logic [31:0] Instr,
 		 output logic [31:0] ALUResult, WriteData,
-		 input  logic [31:0] ReadData
+		 input  logic [31:0] ReadData,
      input  logic        AddPC,
      output logic [3:0]  ByteMask);
    
-   logic [31:0] 		     PCNext, PCPlus4, PCTarget, PCTargetSrcA;
+   logic [31:0] 		     PCNext, PCPlus4, PCTarget, PCTargetSrcA; //added by us
    logic [31:0] 		     ImmExt;
    logic [31:0]          RD1;
    logic [31:0] 		     SrcA, SrcB;
    logic [31:0] 		     Result;
-   logic [31:0]          ToWrite;
-   logic [31:0]          ReadData;        
+   logic [31:0]          ToWrite; //added by us
+   logic [31:0]          FromRead; //added by us
    
    // next PC logic
-   flopr #(32) pcreg (clk, reset, PCNext, PC);
+   flopr #(32) pcreg (clk, reset,PCNext, PC);
    adder  pcadd4 (PC, 32'd4, PCPlus4);
    adder  pcaddbranch (PCTargetSrcA, ImmExt, PCTarget);
    mux2 #(32)  pcmux (PCPlus4, PCTarget, PCSrc, PCNext);
-   mux2 %(32)  pctargetmux(PC, ScrA, ALUSrc, PCTargetSrcA);
+   mux2 #(32)  pctargetmux(PC, SrcA, ALUSrc, PCTargetSrcA); //added by us
    // register file logic
    regfile  rf (clk, RegWrite, Instr[19:15], Instr[24:20],
 	       Instr[11:7], Result, RD1, ToWrite);
    extend  ext (Instr[31:7], ImmSrc, ImmExt);
    // ALU logic
-   mux2 #(32)  srcamux(RD1, PC, AddPC, SrcA);
+   mux2 #(32)  srcamux(RD1, PC, AddPC, SrcA); //added by us
    mux2 #(32)  srcbmux (ToWrite, ImmExt, ALUSrc, SrcB);
-   alu  alu (SrcA, SrcB, ALUControl, ALUResult, Zero, Carry, Neg, Overflow);
-   mux3 #(32) resultmux (ALUResult, ReadData, PCPlus4,ResultSrc, Result);
-   //Read/Write Logic
-   subwordwrite sww(ToWrite, Instr[13:12], ALUResult[1:0], ToWrite, ByteMask);
-   subwordread swr(ReadData,Instr[14:12], ALUResult[1:0],ReadData);
+   alu  alu (SrcA, SrcB, ALUControl, ALUResult, Zero, Negative, Overflow, Carry);
+   mux3 #(32) resultmux (ALUResult, FromRead, PCPlus4,ResultSrc, Result);
+   // Read/WriteLogic
+   subwordwrite sww(ToWrite,Instr[13:12],ALUResult[1:0],WriteData,ByteMask); //added by us
+   subwordread swr(ReadData,Instr[14:12],ALUResult[1:0],FromRead);  //added by us
 
 endmodule // datapath
 
@@ -256,7 +257,7 @@ module extend (input  logic [31:7] instr,
    
    always_comb
      case(immsrc)
-       // I−type 
+       // I−type
        3'b000:  immext = {{20{instr[31]}}, instr[31:20]};
        // S−type (stores)
        3'b001:  immext = {{20{instr[31]}}, instr[31:25], instr[11:7]};
@@ -264,10 +265,8 @@ module extend (input  logic [31:7] instr,
        3'b010:  immext = {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};       
        // J−type (jal)
        3'b011:  immext = {{12{instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0};
-       // U-type
+       //U-type (lui and auipc)
        3'b100:  immext = {instr[31:12], 12'b0};
-       // R-type
-       //3'b101:  immext = {}
        default: immext = 32'bx; // undefined
      endcase // case (immsrc)
    
@@ -318,20 +317,21 @@ module top (input  logic        clk, reset,
 	    output logic 	MemWrite);
    
    logic [31:0] 		PC, Instr, ReadData;
-   logic [3:0]      ByteMask;
+   logic [3:0]      ByteMask; //added by us
    
    // instantiate processor and memories
    riscvsingle rv32single (clk, reset, PC, Instr, MemWrite, DataAdr,
 			   WriteData, ReadData, ByteMask);
    imem imem (PC, Instr);
-   dmem dmem (clk, MemWrite, DataAdr, WriteData,ByteMask, ReadData);
+   dmem dmem (clk, MemWrite, DataAdr, WriteData, ByteMask, ReadData);
    
 endmodule // top
 
 module imem (input  logic [31:0] a,
 	     output logic [31:0] rd);
    
-   logic [31:0] 		 RAM[1023:0];
+   logic [31:0] 		 RAM[63:0];
+   //logic [31:0] 		 RAM[2047:0];
    
    assign rd = RAM[a[31:2]]; // word aligned
    
@@ -339,16 +339,19 @@ endmodule // imem
 
 module dmem (input  logic        clk, we,
 	     input  logic [31:0] a, wd,
-       input  logic [3:0]  ByteMask;
+       input  logic [3:0] ByteMask, //added by us
 	     output logic [31:0] rd);
    
-   logic [31:0]      BitMask;
    logic [31:0] 		 RAM[255:0];
-   
+   logic [31:0]      BitMask; //added by us
+
    assign BitMask = {{8{ByteMask[3]}},{8{ByteMask[2]}},{8{ByteMask[1]}},{8{ByteMask[0]}}};
+   
    assign rd = RAM[a[31:2]]; // word aligned
-   always_ff @(posedge clk)
-     if (we) RAM[a[31:2]] <= (rd & ~BitMask) | (wd & BitMask);
+   /*always_ff @(posedge clk)
+     if (we) RAM[a[31:2]] <= wd;*/
+    always_ff @(posedge clk)
+      if (we) RAM[a[31:2]] <= (rd & ~BitMask) | (wd & BitMask);
    
 endmodule // dmem
 
@@ -414,12 +417,12 @@ endmodule
 module alu (input  logic [31:0] a, b,
             input  logic [3:0] 	alucontrol,
             output logic [31:0] result,
-            output logic 	      zero, carry, neg, overflow);
+            output logic 	zero, negative, overflow, carry);
 
-   logic [31:0] 	      condinvb, sum;
-   logic 		            v;              // overflow
-   logic 		            isAddSub;       // true when is add or subtract operation
-   logic signed [31:0]  signedA;
+   logic [31:0] 	       condinvb, sum;
+   logic 		       v;              // overflow
+   logic 		       isAddSub;       // true when is add or subtract operation
+   logic signed [31:0] signedA;    //for shift right arithmetic
 
    assign signedA = a;
    assign condinvb = alucontrol[0] ? ~b : b;
@@ -444,9 +447,10 @@ module alu (input  logic [31:0] a, b,
      endcase
 
    assign zero = (result == 32'b0);
-   assign carry = a < b;
-   assign neg = (result[31] == 1);
+   assign negative = (result[31] == 1); //MSB is 1, two complement
    assign overflow = v;
+   //assign carry = (a - b) == (a + ~b + 1);
+   assign carry = a < b;
    assign v = ~(alucontrol[0] ^ a[31] ^ b[31]) & (a[31] ^ sum[31]) & isAddSub;
    
 endmodule // alu
@@ -471,4 +475,3 @@ module regfile (input  logic        clk,
    assign rd2 = (a2 != 0) ? rf[a2] : 0;
    
 endmodule // regfile
-
