@@ -25,8 +25,8 @@
 //   sw           0100011   010       immediate
 //   jal          1101111   immediate immediate
 
-// Add the following to the code:
-//  Instruction   opcode    funct3    funct7      Done?
+// Add the following
+//  Instruction   opcode    funct3    funct7      Done
 //  auipc         0010111   imm       immediate   Done
 //  bge           1100011   101       immediate   Done
 //  bgeu          1100011   111       immediate   Done
