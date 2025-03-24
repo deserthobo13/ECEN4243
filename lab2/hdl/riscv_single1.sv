@@ -119,13 +119,13 @@ module testbench();
    always @(negedge clk)
      begin
 		if(MemWrite) begin
-			   //if(DataAdr === 100 & WriteData === 25) begin
-				//  $display("Simulation succeeded");
-				//  $stop;
-			   //end else if (DataAdr !== 96) begin
-				//  $display("Simulation failed");
-				//  $stop;
-			   //end
+			if(DataAdr === 100 & WriteData === 25) begin
+				 $display("Simulation succeeded");
+				  $stop;
+			   end else if (DataAdr !== 96) begin
+				  $display("Simulation failed");
+				  $stop;
+			   end
 		end
      end
 endmodule // testbench
@@ -209,17 +209,16 @@ module controller (input  logic [6:0] op,
    aludec ad (op[5], funct3, funct7b5, ALUOp, ALUControl);
    
    always_comb
-	   case (funct3)
-			3'b000:  assign BranchTaken = Zero; 					// beq =
-			3'b001:  assign BranchTaken = Zero; 					// bne !=
-			3'b100:  assign BranchTaken = (Neg ^ Overflow);  	// blt <
-			3'b101:  assign BranchTaken = (Neg ^ Overflow);   	// bge >=
-			3'b110:  assign BranchTaken = Carry; 					// bltu < unsigned
-			3'b111:  assign BranchTaken = Carry; 				   	// bgeu >= unsigned
-			default: assign BranchTaken = Zero;
-	endcase
-
-   assign PCSrc = Branch & (BranchTaken ^ funct3[0]) | Jump;
+	   case(funct3)
+        3'b000:   BranchControl = Zero;    //beq
+        3'b001:   BranchControl = ~Zero;    //bne
+        3'b100:   BranchControl = Neg ^ Overflow;    //blt  
+        3'b101:   BranchControl = ~(Neg ^ Overflow);    //bge
+        3'b110:   BranchControl = Zero | ~Carry;   //bltu
+        3'b111:   BranchControl = Carry;  //bgeu
+        default:  BranchControl = 1'b0;
+      endcase
+   assign PCSrc = (Branch & BranchControl) /*(Zero ^ funct3[0])*/ | Jump;
    
 endmodule // controller
 
