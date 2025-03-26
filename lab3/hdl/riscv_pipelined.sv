@@ -92,9 +92,9 @@ module testbench();
    initial
      begin
 	string memfilename;
-    // memfilename = {"programs/riscvtest.memfile"};
-		// memfilename = {"programs/fib.memfile"};
-		// memfilename = {"programs/bne-test.memfile"};
+    // memfilename = {"riscvtest/riscvtest.memfile"};
+		// memfilename = {"riscvtest/fib.memfile"};
+		// memfilename = {"riscvtest/bne-test.memfile"};
 		
 		
         // memfilename = {"testing/add.memfile"};   
@@ -153,13 +153,13 @@ module testbench();
    always @(negedge clk)
      begin
 	if(MemWrite) begin
-           //if(DataAdr === 100 & WriteData === 25) begin
-           //   $display("Simulation succeeded");
-           //   $stop;
-           //end else if (DataAdr !== 96) begin
-           //   $display("Simulation failed");
-           //   $stop;
-           //end
+           if(DataAdr === 100 & WriteData === 25) begin
+              $display("Simulation succeeded");
+              $stop;
+           end else if (DataAdr !== 96) begin
+              $display("Simulation failed");
+              $stop;
+           end
 	      end
      end
 endmodule
@@ -197,7 +197,7 @@ module riscv(input  logic        clk, reset,
    logic 			       ZeroE;
    logic 			       PCSrcE;
    logic [2:0] 			 ALUControlE;
-   logic 			       ALUSrcE;
+   logic [1:0]       ALUSrcE;
    logic 			       ResultSrcEb0;
    logic 			       RegWriteM;
    logic [1:0] 			 ResultSrcW;
@@ -207,7 +207,7 @@ module riscv(input  logic        clk, reset,
    logic 			 StallF, StallD, FlushD, FlushE;
 
    logic [4:0] 			 Rs1D, Rs2D, Rs1E, Rs2E, RdE, RdM, RdW;
-   logic             PCTargetSrcE; // for jalr
+   logic             PCTargetSrcE; 
    
    controller c(clk, reset,
 		opD, funct3D, funct7b5D, ImmSrcD,
@@ -326,6 +326,7 @@ endmodule
 
 // ==========================================================================================
 // ALUDEC
+
 module aludec(input  logic       opb5,
               input logic [2:0]  funct3,
               input logic 	 funct7b5, 
