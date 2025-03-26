@@ -197,18 +197,18 @@ module riscv(input  logic        clk, reset,
    logic 			       ZeroE;
    logic 			       PCSrcE;
    logic [2:0] 			 ALUControlE;
-   logic [1:0]       ALUSrcE;
+   logic             ALUSrcE;
    logic 			       ResultSrcEb0;
    logic 			       RegWriteM;
    logic [1:0] 			 ResultSrcW;
    logic 			       RegWriteW;
 
    logic [1:0] 			 ForwardAE, ForwardBE;
-   logic 			 StallF, StallD, FlushD, FlushE;
+   logic 			       StallF, StallD, FlushD, FlushE;
 
    logic [4:0] 			 Rs1D, Rs2D, Rs1E, Rs2E, RdE, RdM, RdW;
-   logic             PCTargetSrcE; 
-   
+   logic             PCTargetSrcE; //Added
+
    controller c(clk, reset,
 		opD, funct3D, funct7b5D, ImmSrcD,
 		FlushE, ZeroE, PCSrcE, ALUControlE, ALUSrcE, ResultSrcEb0,
@@ -312,13 +312,13 @@ module maindec(input  logic [6:0] op,
        7'b0100011: controls = 14'b0_001_01_1_00_0_00_0_0; // sw
        7'b0110011: controls = 14'b1_xxx_00_0_00_0_10_0_0; // R-type 
        7'b1100011: controls = 14'b0_010_00_0_00_1_01_0_0; // beq
-       7'b0010011: controls = 14'b1_000_01_0_00_0_10_0_0; // I-type ALU
+       7'b0010011: controls = 14'b1_000_01_0_00_0_10_0_0; // I-type ALU ADDED
        7'b1101111: controls = 14'b1_011_00_0_10_0_00_0_1; // jal
-       7'b1100111: controls = 14'b1_000_01_0_10_0_00_1_1; // jalr
-       7'b0110111: controls = 14'b1_100_01_0_00_0_11_0_0; // lui
-       7'b0010111: controls = 14'b1_100_11_0_00_0_00_0_0; // auipc  
+       7'b1100111: controls = 14'b1_000_01_0_10_0_00_1_1; // jalr ADDED
+       7'b0110111: controls = 14'b1_100_01_0_00_0_11_0_0; // lui ADDED
+       7'b0010111: controls = 14'b1_100_11_0_00_0_00_0_0; // auipc  ADDED
        7'b0000000: controls = 14'b0_000_00_0_00_0_00_0_0; // need valid values at reset
-       7'b1110011: controls = 14'b0_000_00_0_00_0_00_0_0; // ecall
+       7'b1110011: controls = 14'b0_000_00_0_00_0_00_0_0; // ecall ADDED
        
        default:    controls = 14'bx_xxx_xx_x_xx_x_xx_x_x;  // non-implemented instruction
      endcase
@@ -329,7 +329,7 @@ endmodule
 
 module aludec(input  logic       opb5,
               input logic [2:0]  funct3,
-              input logic 	 funct7b5, 
+              input logic 	     funct7b5, 
               input logic [1:0]  ALUOp,
               output logic [2:0] ALUControl);
 
@@ -377,7 +377,7 @@ module datapath(input logic clk, reset,
                 input logic [1:0]   ForwardAE, ForwardBE,
                 input logic 	    PCSrcE,
                 input logic [2:0]   ALUControlE,
-                input logic 	    ALUSrcE,
+                input logic [1:0]   ALUSrcE, //ADDED [1:0]
                 output logic 	    ZeroE,
                 // Memory stage signals
                 input logic 	    MemWriteM, 
@@ -389,7 +389,7 @@ module datapath(input logic clk, reset,
                 // Hazard Unit signals 
                 output logic [4:0]  Rs1D, Rs2D, Rs1E, Rs2E,
                 output logic [4:0]  RdE, RdM, RdW
-                input  logic        PCTargetSrcE);
+                input  logic        PCTargetSrcE); //ADDED
 
    // Fetch stage signals
    logic [31:0] 		    PCNextF, PCPlus4F;
@@ -446,8 +446,8 @@ module datapath(input logic clk, reset,
    mux3	  #(32)  faemux(RD1E, ResultW, ALUResultM, ForwardAE, WriteDataAE);
    mux3   #(32)  fbemux(RD2E, ResultW, ALUResultM, ForwardBE, WriteDataBE);
    
-   mux2	  #(32)  srcamux(WriteDataAE, PCE,     ALUSrcE[1], SrcAE);
-   mux2   #(32)  srcbmux(WriteDataBE, ImmExtE, ALUSrcE[0], SrcBE);
+   mux2	  #(32)  srcamux(WriteDataAE, PCE,     ALUSrcE[1], SrcAE); //ADDED ALUSrcE[1]
+   mux2   #(32)  srcbmux(WriteDataBE, ImmExtE, ALUSrcE[0], SrcBE); //ADDED mux2 and ALUSrcE[0]
    
    // mux to switch between RS1 and PCE for jalr
    mux2   #(32)  pcTargetmux(PCE, WriteDataAE, PCTargetSrcE, PCTargetSel); 
@@ -743,8 +743,8 @@ module alu(input  logic [31:0] a, b,
    assign negative = sum[31];
    assign v = ~(alucontrol[0] ^ a[31] ^ b[31]) & (a[31] ^ sum[31]) & isAddSub;
    
-   always_comb
-     case (funct3E)
+   always_comb 
+     case (funct3E) //ADDED section 
 		3'b000:  assign zeroB = (result == 32'b0); 	// beq =
 		3'b001:  assign zeroB = (result == 32'b0); 	// bne !=
 		3'b100:  assign zeroB = (negative ^ v);  	// blt <
