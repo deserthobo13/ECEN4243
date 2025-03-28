@@ -34,5 +34,4 @@ Main updates to the implemintation file:
   In Decoder:
     Increased Control signal width form 13 to 14
   Took out the testbench, top, imem and dmem
-    
-  
+======================================================================================================================= 
