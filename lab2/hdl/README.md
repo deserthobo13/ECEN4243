@@ -10,6 +10,7 @@ vsim -do riscv_single.do -c
 or
 
 vsim -do riscv_single.do
+
 =======================================================================================================================
 
 Main updates to the simulation file:
@@ -27,6 +28,7 @@ Main updates to the simulation file:
     Updated PC logic to use PCSrc to selcet between PC+4 and the branch/jump target
   In ALU:
     Generates Neg, Carry, and Overflow flags
+    
 =======================================================================================================================
 
 Main updates to the implemintation file:
@@ -34,4 +36,5 @@ Main updates to the implemintation file:
   In Decoder:
     Increased Control signal width form 13 to 14
   Took out the testbench, top, imem and dmem
+  
 ======================================================================================================================= 
