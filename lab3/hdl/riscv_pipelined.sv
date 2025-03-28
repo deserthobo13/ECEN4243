@@ -181,7 +181,8 @@ module top(input  logic        clk, reset,
    dmem dmem (clk, MemWriteM, DataAdrM, WriteDataM, funct3M, ReadDataM);
    
 endmodule
-
+//========================================================
+// RISCV
 module riscv(input  logic        clk, reset,
              output logic [31:0] PCF,
              input logic [31:0]  InstrF,
@@ -197,7 +198,7 @@ module riscv(input  logic        clk, reset,
    logic 			       ZeroE;
    logic 			       PCSrcE;
    logic [2:0] 			 ALUControlE;
-   logic             ALUSrcE;
+   logic [1:0]       ALUSrcE;
    logic 			       ResultSrcEb0;
    logic 			       RegWriteM;
    logic [1:0] 			 ResultSrcW;
@@ -242,7 +243,7 @@ module controller(input  logic		 clk, reset,
                   input logic 	     ZeroE, 
                   output logic 	     PCSrcE, // for datapath and Hazard Unit
                   output logic [2:0] ALUControlE, 
-                  output logic 	     ALUSrcE,
+                  output logic [1:0] ALUSrcE,
                   output logic 	     ResultSrcEb0, // for Hazard Unit
                   // Memory stage control signals
                   output logic 	     MemWriteM,
@@ -260,7 +261,7 @@ module controller(input  logic		 clk, reset,
    logic 			     BranchD, BranchE;
    logic [1:0]     ALUOpD;
    logic [2:0]     ALUControlD;
-   logic 			     ALUSrcD;
+   logic [1:0]     ALUSrcD;
    logic           PCTargetSrc;
    
    // Decode stage logic
@@ -293,12 +294,12 @@ endmodule
 
 module maindec(input  logic [6:0] op,
                output logic [1:0] ResultSrc,
-               output logic 	  MemWrite,
-               output logic 	  Branch, ALUSrc,
-               output logic 	  RegWrite, Jump,
+               output logic 	    MemWrite,
+               output logic 	    Branch, ALUSrc,
+               output logic 	    RegWrite, Jump,
                output logic [1:0] ImmSrc,
                output logic [1:0] ALUOp,
-               output logic      PCTargetSrc);
+               output logic       PCTargetSrc);
 
    logic [13:0] 		  controls;
 
@@ -369,18 +370,18 @@ module datapath(input logic clk, reset,
                 // Decode stage signals
                 output logic [6:0]  opD,
                 output logic [2:0]  funct3D, funct3M, 
-                output logic 	    funct7b5D,
-                input logic 	    StallD, FlushD,
-                input logic [1:0]   ImmSrcD,
+                output logic 	      funct7b5D,
+                input logic 	      StallD, FlushD,
+                input logic [2:0]   ImmSrcD,
                 // Execute stage signals
-                input logic 	    FlushE,
+                input logic 	      FlushE,
                 input logic [1:0]   ForwardAE, ForwardBE,
-                input logic 	    PCSrcE,
+                input logic 	      PCSrcE,
                 input logic [2:0]   ALUControlE,
                 input logic [1:0]   ALUSrcE, //ADDED [1:0]
-                output logic 	    ZeroE,
+                output logic 	      ZeroE,
                 // Memory stage signals
-                input logic 	    MemWriteM, 
+                input logic 	      MemWriteM, 
                 output logic [31:0] WriteDataM, ALUResultM,
                 input logic [31:0]  ReadDataM,
                 // Writeback stage signals
@@ -456,7 +457,7 @@ module datapath(input logic clk, reset,
    adder         branchadd(ImmExtE, PCTargetSel, PCTargetE);
 
    // Memory stage pipeline register
-   flopr  #(101) regM(clk, reset, 
+   flopr  #(104) regM(clk, reset, 
                       {ALUResultE, WriteDataE, RdE, PCPlus4E, funct3E},
                       {ALUResultM, WriteDataM, RdM, PCPlus4M, funct3M});
    
@@ -472,10 +473,10 @@ endmodule
 
 // Hazard Unit: forward, stall, and flush
 module hazard(input  logic [4:0] Rs1D, Rs2D, Rs1E, Rs2E, RdE, RdM, RdW,
-              input logic 	 PCSrcE, ResultSrcEb0, 
-              input logic 	 RegWriteM, RegWriteW,
-              output logic [1:0] ForwardAE, ForwardBE,
-              output logic 	 StallF, StallD, FlushD, FlushE);
+              input logic 	      PCSrcE, ResultSrcEb0, 
+              input logic 	      RegWriteM, RegWriteW,
+              output logic [1:0]  ForwardAE, ForwardBE,
+              output logic 	      StallF, StallD, FlushD, FlushE);
 
    logic 			 lwStallD;
    
@@ -484,12 +485,12 @@ module hazard(input  logic [4:0] Rs1D, Rs2D, Rs1E, Rs2E, RdE, RdM, RdW,
       ForwardAE = 2'b00;
       ForwardBE = 2'b00;
       if (Rs1E != 5'b0)
-	if      ((Rs1E == RdM) & RegWriteM) ForwardAE = 2'b10;
-	else if ((Rs1E == RdW) & RegWriteW) ForwardAE = 2'b01;
+	      if      ((Rs1E == RdM) & RegWriteM) ForwardAE = 2'b10;
+	      else if ((Rs1E == RdW) & RegWriteW) ForwardAE = 2'b01;
       
       if (Rs2E != 5'b0)
-	if      ((Rs2E == RdM) & RegWriteM) ForwardBE = 2'b10;
-	else if ((Rs2E == RdW) & RegWriteW) ForwardBE = 2'b01;
+	      if      ((Rs2E == RdM) & RegWriteM) ForwardBE = 2'b10;
+	      else if ((Rs2E == RdW) & RegWriteW) ForwardBE = 2'b01;
    end
    
    // stalls and flushes
@@ -504,7 +505,7 @@ endmodule
 //  REGFILE
 
 module regfile(input  logic         clk, 
-               input  logic 	    we3, 
+               input  logic 	      we3, 
                input  logic [ 4:0]  a1, a2, a3, 
                input  logic [31:0]  wd3, 
                output logic [31:0]  rd1, rd2);
@@ -537,7 +538,7 @@ endmodule
 //  EXTEND (ext)
 
 module extend(input  logic [31:7] instr,
-              input logic [1:0]   immsrc,
+              input logic [2:0]   immsrc,
               output logic [31:0] immext);
    
    always_comb
@@ -619,7 +620,7 @@ endmodule
 
 module mux2 #(parameter WIDTH = 8)
    (input  logic [WIDTH-1:0] d0, d1, 
-    input logic 	     s, 
+    input logic 	           s, 
     output logic [WIDTH-1:0] y);
 
    assign y = s ? d1 : d0; 
@@ -640,7 +641,7 @@ endmodule
 //  IMEM (Intrustion memory)
 
 module imem (input  logic [31:0] a,
-	     output logic [31:0] rd);
+	           output logic [31:0] rd);
    
    logic [31:0] 		 RAM[2047:0];
    
@@ -668,27 +669,27 @@ module dmem (input  logic         clk, we,
    assign signBit   = data[8 * alignment + ((funct3 == 3'b001) ? 15 : ((funct3 == 3'b000) ? 7 : 31))];
    
    always_comb
-	case(funct3)
-		3'b010:  assign mask = 32'hFFFFFFFF; // load word
-		3'b000:  assign mask = 32'h000000FF << (8 * alignment); // load byte
+	    case(funct3)
+		    3'b010:  assign mask = 32'hFFFFFFFF; // load word
+		    3'b000:  assign mask = 32'h000000FF << (8 * alignment); // load byte
 				 //assign extend_mask = {{24{signBit}}, {8'hFF}};
-		3'b100:  assign mask = 32'h000000FF << (8 * alignment); // load unsigned byte
+		    3'b100:  assign mask = 32'h000000FF << (8 * alignment); // load unsigned byte
 				 //assign extend_mask = {{24{signBit}}, {8'hFF}};
-		3'b001:  assign mask = 32'h0000FFFF << (8 * alignment); // load half
+		    3'b001:  assign mask = 32'h0000FFFF << (8 * alignment); // load half
 				 //assign extend_mask = {{16{signBit}}, {16'hFFFF}};
-		3'b101:  assign mask = 32'h0000FFFF << (8 * alignment); // load unsigned half
+		    3'b101:  assign mask = 32'h0000FFFF << (8 * alignment); // load unsigned half
 				 //assign extend_mask = {{16{signBit}}, {16'hFFFF}};
-		default: assign mask = 32'hFFFFFFFF;
+		  default: assign mask = 32'hFFFFFFFF;
 				 //assign extend_mask = 32'hFFFFFFFF;
 	endcase
 	
    always_comb
-	case(funct3)
-		3'b000: assign extend_mask = {{24{signBit}}, {8'h00}};
-		//3'b100: assign extend_mask = {{24{1'b0}}, {8'h00}};
-		3'b001: assign extend_mask = {{16{signBit}}, {16'h0000}};
-		//3'b101: assign extend_mask = {{16{1'b0}}, {16'h0000}};
-		default: assign extend_mask = 32'h00000000;
+	    case(funct3)
+		    3'b000: assign extend_mask = {{24{signBit}}, {8'h00}};
+		    //3'b100: assign extend_mask = {{24{1'b0}}, {8'h00}};
+		    3'b001: assign extend_mask = {{16{signBit}}, {16'h0000}};
+		    //3'b101: assign extend_mask = {{16{1'b0}}, {16'h0000}};
+		  default: assign extend_mask = 32'h00000000;
 	endcase
    
    assign rd = ((data & mask) >> (8 * alignment)) | extend_mask; // word aligned
@@ -703,13 +704,13 @@ endmodule // dmem
 
 module alu(input  logic [31:0] a, b,
            input logic  [3:0]  alucontrol,
-		   input logic  [2:0]  funct3E,
+		       input logic  [2:0]  funct3E,
            output logic [31:0] result,
            output logic        zero);
 
    logic [31:0] 	   condinvb, sum;
-   logic 		       v, carry, negative, zeroB;              // overflow
-   logic 		       isAddSub;       // true when is add or sub
+   logic 		         v, carry, negative, zeroB;              // overflow
+   logic 		         isAddSub;       // true when is add or sub
 	
    logic [32:0]  carried;
 
@@ -728,11 +729,11 @@ module alu(input  logic [31:0] a, b,
        4'b0101:  result = sum[31] ^ v; // slt
 	
        4'b0110:  result = a >> unsigned'(b[4:0]); // srl, srli
-	   4'b0111:  result = a << unsigned'(b[4:0]); // sll, slli
-	   4'b1000:  result = $signed(a) >>> unsigned'(b[4:0]); // sra, srai
-	   4'b1001:  result = unsigned'(a) < unsigned'(b); // sltiu, sltu
+	      4'b0111:  result = a << unsigned'(b[4:0]); // sll, slli
+	      4'b1000:  result = $signed(a) >>> unsigned'(b[4:0]); // sra, srai
+	      4'b1001:  result = unsigned'(a) < unsigned'(b); // sltiu, sltu
 	   
-	   4'b1111:  result = b; // lui
+	      4'b1111:  result = b; // lui
        default: result = 32'bx;
      endcase
 	
@@ -745,16 +746,15 @@ module alu(input  logic [31:0] a, b,
    
    always_comb 
      case (funct3E) //ADDED section 
-		3'b000:  assign zeroB = (result == 32'b0); 	// beq =
-		3'b001:  assign zeroB = (result == 32'b0); 	// bne !=
-		3'b100:  assign zeroB = (negative ^ v);  	// blt <
-		3'b101:  assign zeroB = (negative ^ v);   	// bge >=
-		3'b110:  assign zeroB = carry; 				// bltu < unsigned
-		3'b111:  assign zeroB = carry; 				// bgeu >= unsigned
-		default: assign zeroB = (result == 32'b0);
+		    3'b000:  assign zeroB = (result == 32'b0); 	// beq =
+		    3'b001:  assign zeroB = (result == 32'b0); 	// bne !=
+		    3'b100:  assign zeroB = (negative ^ v);  	// blt <
+		    3'b101:  assign zeroB = (negative ^ v);   	// bge >=
+		    3'b110:  assign zeroB = carry; 				// bltu < unsigned
+		    3'b111:  assign zeroB = carry; 				// bgeu >= unsigned
+		    default: assign zeroB = (result == 32'b0);
      endcase
    
    assign zero = zeroB ^ funct3E[0];
    
 endmodule
-
