@@ -140,19 +140,19 @@ module testbench();
    // initialize test
    initial
      begin
-	reset <= 1; # 22; reset <= 0;
+	    reset <= 1; # 22; reset <= 0;
      end
 
    // generate clock to sequence tests
    always
      begin
-	clk <= 1; # 5; clk <= 0; # 5;
+    	clk <= 1; # 5; clk <= 0; # 5;
      end
 
    // check results
    always @(negedge clk)
      begin
-	if(MemWrite) begin
+	    if(MemWrite) begin
            if(DataAdr === 100 & WriteData === 25) begin
               $display("Simulation succeeded");
               $stop;
@@ -709,7 +709,7 @@ module alu(input  logic [31:0] a, b,
            output logic        zero);
 
    logic [31:0] 	   condinvb, sum;
-   logic 		         v, carry, negative, zeroB;              // overflow
+   logic 		         v, carry, negative, BranchControl;              // overflow
    logic 		         isAddSub;       // true when is add or sub
 	
    logic [32:0]  carried;
@@ -746,15 +746,15 @@ module alu(input  logic [31:0] a, b,
    
    always_comb 
      case (funct3E) //ADDED section 
-		    3'b000:  assign zeroB = (result == 32'b0); 	// beq =
-		    3'b001:  assign zeroB = (result == 32'b0); 	// bne !=
-		    3'b100:  assign zeroB = (negative ^ v);  	// blt <
-		    3'b101:  assign zeroB = (negative ^ v);   	// bge >=
-		    3'b110:  assign zeroB = carry; 				// bltu < unsigned
-		    3'b111:  assign zeroB = carry; 				// bgeu >= unsigned
-		    default: assign zeroB = (result == 32'b0);
+		    3'b000:  assign BranchControl = (result == 32'b0); 	// beq =
+		    3'b001:  assign BranchControl = (result == 32'b0); 	// bne !=
+		    3'b100:  assign BranchControl = (negative ^ v);  	// blt <
+		    3'b101:  assign BranchControl = (negative ^ v);   	// bge >=
+		    3'b110:  assign BranchControl = carry; 				// bltu < unsigned
+		    3'b111:  assign BranchControl = carry; 				// bgeu >= unsigned
+		    default: assign BranchControl = (result == 32'b0);
      endcase
    
-   assign zero = zeroB ^ funct3E[0];
+   assign zero = BranchControl ^ funct3E[0];
    
 endmodule
