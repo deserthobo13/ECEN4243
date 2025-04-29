@@ -2,49 +2,46 @@
 .globl rvtest_entry_point
 
 rvtest_entry_point:
-
     # set up PMP so all of memory is accessible and we don't trap when entering supervisor mode
     li t0, -1
-    csrw pmpaddr0, t0
-
-    li t0, 0x0F
-    csrw pmpcfg0, t0 
-
-    # Define region 0 to cover all addresses as RWX
+    csrw pmpaddr0, t0          # Set pmpaddr0 to all 1s
+    li t0, 0x7F
+    csrw pmpcfg0, t0          # Set pmpcfg0 to RWX for region 0
     nop
-    
-    # switch to supervisor mode	
-    jal supervisorstart
-    # Set mstatus.MPP to 01, set MPEC to a trampoline address where supervisor should begin, do mret
-    csrr t0, mstatus
-    andi t0, t0, 0x1800
-    
-    
-				# fill in instructions here			
-    mret                    	# enter supervisor mode at supervisorstart
+
+    # switch to supervisor mode    
+    csrr t0, mstatus        # Read mstatus
+    li t1, 0x1800         
+    not t2, t1
+    and t0, t0, t2         
+    li t1, 0x800         
+    or t0, t0, t1         
+    csrw mstatus, t0       
+    la t0, supervisorstart  
+    csrw mepc, t0           
+    mret                    # enter supervisor mode at supervisorstart
     nop
 
 supervisorstart:
-    la t0, pagetable        	# get address of root page table
-				# fill in instructions here 
-    csrw satp, t0         	# enable virtual memory
+    la t0, pagetable        # get address of root page table
+    srli t1, t0, 12         
+    li t2, 8               
+    slli t2, t2, 31        
+    or t1, t1, t2         
+    mv t0, t1               
+    csrw satp, t0           # enable virtual memory
     
-    # now we are execuiting on virtual page 0x80000, which is also physical page 0x80000
-    # (this can be whatever you want as long as you use the correct address defined in the proj)	
     li t0, 0x90000300       
     li t1, 42
     sw t1, 0(t0)
 
-
     la t0, testcode         # address of a routine to run
     lui t1, 0x10000         
     add t0, t0, t1          # address of testcode on virtual page 0x90000 
-    jr t0                   # jump to the testcode on Virtual page 0x90000, 
-                            #   which still points to same code on physical page 0x80000
-    nop                     # shouldn't be executed
+    jr t0                   # jump to the testcode on Virtual page 0x90000
 
 testcode:
-    li t0, 42                # do something
+    li t0, 42               # do something
 
 write_tohost:
     la s1, tohost           # terminate with write tohost
@@ -60,11 +57,9 @@ tohost:
 
 .data
 
-
 .align 16
 # root (L1) Page table situated at 0x80010000
 pagetable:
 
 .align 12
 # L0 page table situated at 0x80011000
-
