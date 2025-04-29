@@ -11,24 +11,24 @@ rvtest_entry_point:
 
     # switch to supervisor mode    
     csrr t0, mstatus        # Read mstatus
-    li t1, 0x1800           # Mask for MPP bits (12:11)
+    li t1, 0x1800         
     not t2, t1
-    and t0, t0, t2         # Clear MPP bits
-    li t1, 0x800            # Set MPP to 01
-    or t0, t0, t1           # Set MPP to 01
-    csrw mstatus, t0        # Write back to mstatus
-    la t0, supervisorstart  # Load supervisorstart address
-    csrw mepc, t0           # Set mepc
+    and t0, t0, t2         
+    li t1, 0x800         
+    or t0, t0, t1         
+    csrw mstatus, t0       
+    la t0, supervisorstart  
+    csrw mepc, t0           
     mret                    # enter supervisor mode at supervisorstart
     nop
 
 supervisorstart:
     la t0, pagetable        # get address of root page table
-    srli t1, t0, 12         # Get PPN (t0 >> 12)
-    li t2, 8                # Sv32 mode
-    slli t2, t2, 31         # Shift mode to bit 31
-    or t1, t1, t2           # Combine PPN and mode
-    mv t0, t1               # Move to t0 for csrw
+    srli t1, t0, 12         
+    li t2, 8               
+    slli t2, t2, 31        
+    or t1, t1, t2         
+    mv t0, t1               
     csrw satp, t0           # enable virtual memory
     
     li t0, 0x90000300       
