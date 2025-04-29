@@ -3,18 +3,17 @@
 
 rvtest_entry_point:
     # set up PMP so all of memory is accessible and we don't trap when entering supervisor mode
-    # Define region 0 to cover all addresses as RWX
     li t0, -1
     csrw pmpaddr0, t0          # Set pmpaddr0 to all 1s
-    li to, 0x7F
+    li t0, 0x7F
     csrw pmpcfg0, t0          # Set pmpcfg0 to RWX for region 0
     nop
 
-    # switch to supervisor mode	
-    # Set mstatus.MPP to 01, set MPEC to a trampoline address where supervisor should begin, do mret
+    # switch to supervisor mode    
     csrr t0, mstatus        # Read mstatus
     li t1, 0x1800           # Mask for MPP bits (12:11)
-    and t0, t0, ~t1         # Clear MPP bits
+    not t2, t1
+    and t0, t0, t2         # Clear MPP bits
     li t1, 0x800            # Set MPP to 01
     or t0, t0, t1           # Set MPP to 01
     csrw mstatus, t0        # Write back to mstatus
@@ -32,8 +31,6 @@ supervisorstart:
     mv t0, t1               # Move to t0 for csrw
     csrw satp, t0           # enable virtual memory
     
-    # now we are execuiting on virtual page 0x80000, which is also physical page 0x80000
-    # (this can be whatever you want as long as you use the correct address defined in the proj)	
     li t0, 0x90000300       
     li t1, 42
     sw t1, 0(t0)
@@ -41,9 +38,7 @@ supervisorstart:
     la t0, testcode         # address of a routine to run
     lui t1, 0x10000         
     add t0, t0, t1          # address of testcode on virtual page 0x90000 
-    jr t0                   # jump to the testcode on Virtual page 0x90000, 
-                            #   which still points to same code on physical page 0x80000
-    nop                     # shouldn't be executed
+    jr t0                   # jump to the testcode on Virtual page 0x90000
 
 testcode:
     li t0, 42               # do something
